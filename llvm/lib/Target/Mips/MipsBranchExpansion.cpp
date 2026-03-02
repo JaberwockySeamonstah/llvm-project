@@ -368,6 +368,8 @@ void MipsBranchExpansion::replaceBranch(MachineBasicBlock &MBB, Iter Br,
   }
 
   if (Br->hasDelaySlot()) {
+    /// Investigate99
+
     // Bundle the instruction in the delay slot to the newly created branch
     // and erase the original branch.
     assert(Br->isBundledWithSucc());
