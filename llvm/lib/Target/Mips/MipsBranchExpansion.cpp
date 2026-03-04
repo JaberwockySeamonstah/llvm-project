@@ -95,6 +95,7 @@
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include <algorithm>
 #include <cassert>
@@ -369,11 +370,16 @@ void MipsBranchExpansion::replaceBranch(MachineBasicBlock &MBB, Iter Br,
 
   if (Br->hasDelaySlot()) {
     /// Investigate99
-
     // Bundle the instruction in the delay slot to the newly created branch
     // and erase the original branch.
     assert(Br->isBundledWithSucc());
     MachineBasicBlock::instr_iterator II = Br.getInstrIterator();
+
+    if(STI->hasMips1()) {
+      if(TII->HasLoadDelaySlot(*II)) {
+        errs() << "warning: Detected a load delay slot thingy in branch?" << *II << "\n";
+      }
+    }
     MIBundleBuilder(&*MIB).append((++II)->removeFromBundle());
   }
   Br->eraseFromParent();

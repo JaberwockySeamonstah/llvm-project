@@ -40,6 +40,7 @@
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include <algorithm>
 #include <cassert>
@@ -250,7 +251,7 @@ namespace {
     /// This function checks if it is valid to move Candidate to the delay slot
     /// and returns true if it isn't. It also updates memory and register
     /// dependence information.
-    bool delayHasHazard(const MachineInstr &Candidate, RegDefsUses &RegDU,
+    bool delayHasHazard(const MipsSubtarget& STI, const MachineInstr &Candidate, RegDefsUses &RegDU,
                         InspectMemInstr &IM) const;
 
     /// This function searches range [Begin, End) for an instruction that can be
@@ -468,10 +469,12 @@ bool InspectMemInstr::hasHazard(const MachineInstr &MI) {
     return true;
   }
 
+  outs() << "Planschi!!\n";
   return hasHazard_(MI);
 }
 
 bool LoadFromStackOrConst::hasHazard_(const MachineInstr &MI) {
+  outs() << "Got there!\n";
   if (MI.mayStore())
     return true;
 
@@ -492,11 +495,13 @@ MemDefsUses::MemDefsUses(const MachineFrameInfo *MFI_)
     : InspectMemInstr(false), MFI(MFI_) {}
 
 bool MemDefsUses::hasHazard_(const MachineInstr &MI) {
+  outs() << "Actually we are over here :)\n";
   bool HasHazard = false;
 
   // Check underlying object list.
   SmallVector<ValueType, 4> Objs;
   if (getUnderlyingObjects(MI, Objs)) {
+    outs() << "oooh spooky\n";
     for (ValueType VT : Objs)
       HasHazard |= updateDefsUses(VT, MI.mayStore());
     return HasHazard;
@@ -725,10 +730,10 @@ bool MipsDelaySlotFiller::searchRange(MachineBasicBlock &MBB, IterTy Begin,
       continue;
     }
 
-    if (delayHasHazard(*CurrI, RegDU, IM))
+    const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
+    if (delayHasHazard(STI, *CurrI, RegDU, IM))
       continue;
 
-    const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
     if (STI.isTargetNaCl()) {
       // In NaCl, instructions that must be masked are forbidden in delay slots.
       // We only check for loads, stores and SP changes.  Calls, returns and
@@ -948,7 +953,7 @@ bool MipsDelaySlotFiller::examinePred(MachineBasicBlock &Pred,
   return true;
 }
 
-bool MipsDelaySlotFiller::delayHasHazard(const MachineInstr &Candidate,
+bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const MachineInstr &Candidate,
                                          RegDefsUses &RegDU,
                                          InspectMemInstr &IM) const {
   assert(!Candidate.isKill() &&
@@ -958,6 +963,16 @@ bool MipsDelaySlotFiller::delayHasHazard(const MachineInstr &Candidate,
 
   HasHazard |= IM.hasHazard(Candidate);
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
+
+  if(STI.hasMips1()) {
+    const MipsInstrInfo* TII = STI.getInstrInfo();
+    const bool hasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
+
+    errs() << ((hasLoadDelaySlot) ? "!!: " : "    " ) << " -- " << ((HasHazard) ? "Hazard! " : "Safe?   ") << "Candidate: " << Candidate << "\n";
+    if(hasLoadDelaySlot) {
+      return true;
+    }
+  }
 
   return HasHazard;
 }

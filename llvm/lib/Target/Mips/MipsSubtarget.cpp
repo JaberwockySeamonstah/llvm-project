@@ -95,7 +95,7 @@ MipsSubtarget::MipsSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
 
   // MIPS-I has not been tested.
   if (MipsArchVersion == Mips1 && !MIPS1WarningPrinted) {
-    errs() << "warning: MIPS-I support is experimental\n";
+    errs() << "warning: MIPS-I support is experimental - Yeah!!\n";
     MIPS1WarningPrinted = true;
   }
 
