@@ -374,12 +374,6 @@ void MipsBranchExpansion::replaceBranch(MachineBasicBlock &MBB, Iter Br,
     // and erase the original branch.
     assert(Br->isBundledWithSucc());
     MachineBasicBlock::instr_iterator II = Br.getInstrIterator();
-
-    if(STI->hasMips1()) {
-      if(TII->HasLoadDelaySlot(*II)) {
-        errs() << "warning: Detected a load delay slot thingy in branch?" << *II << "\n";
-      }
-    }
     MIBundleBuilder(&*MIB).append((++II)->removeFromBundle());
   }
   Br->eraseFromParent();

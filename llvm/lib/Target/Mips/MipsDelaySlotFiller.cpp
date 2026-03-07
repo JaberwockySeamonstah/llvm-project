@@ -469,12 +469,10 @@ bool InspectMemInstr::hasHazard(const MachineInstr &MI) {
     return true;
   }
 
-  outs() << "Planschi!!\n";
   return hasHazard_(MI);
 }
 
 bool LoadFromStackOrConst::hasHazard_(const MachineInstr &MI) {
-  outs() << "Got there!\n";
   if (MI.mayStore())
     return true;
 
@@ -495,13 +493,12 @@ MemDefsUses::MemDefsUses(const MachineFrameInfo *MFI_)
     : InspectMemInstr(false), MFI(MFI_) {}
 
 bool MemDefsUses::hasHazard_(const MachineInstr &MI) {
-  outs() << "Actually we are over here :)\n";
   bool HasHazard = false;
 
   // Check underlying object list.
+  // Planschi: This is a problem?
   SmallVector<ValueType, 4> Objs;
   if (getUnderlyingObjects(MI, Objs)) {
-    outs() << "oooh spooky\n";
     for (ValueType VT : Objs)
       HasHazard |= updateDefsUses(VT, MI.mayStore());
     return HasHazard;
@@ -968,10 +965,12 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const Machine
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool hasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
-    errs() << ((hasLoadDelaySlot) ? "!!: " : "    " ) << " -- " << ((HasHazard) ? "Hazard! " : "Safe?   ") << "Candidate: " << Candidate << "\n";
-    if(hasLoadDelaySlot) {
-      return true;
+    if(hasLoadDelaySlot && !HasHazard) {
+      outs() << ((hasLoadDelaySlot) ? "!!: " : "    " ) << " -- " << ((HasHazard) ? "Hazard! " : "Safe?   ") << "Candidate: " << Candidate << "\n";
     }
+    /*if(hasLoadDelaySlot) {
+      return true;
+    }*/
   }
 
   return HasHazard;
