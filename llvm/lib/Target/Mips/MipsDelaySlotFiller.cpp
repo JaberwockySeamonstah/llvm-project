@@ -229,8 +229,8 @@ namespace {
     /// This function checks if it is valid to move Candidate to the delay slot
     /// and returns true if it isn't. It also updates memory and register
     /// dependence information.
-    bool delayHasHazard(const MachineInstr &Candidate, RegDefsUses &RegDU,
-                        InspectMemInstr &IM) const;
+    bool delayHasHazard(const MipsSubtarget& STI, const MachineInstr &Candidate, 
+                        RegDefsUses &RegDU, InspectMemInstr &IM) const;
 
     /// This function searches range [Begin, End) for an instruction that can be
     /// moved to the delay slot. Returns true on success.
@@ -789,10 +789,11 @@ bool MipsDelaySlotFiller::searchRange(MachineBasicBlock &MBB, IterTy Begin,
       continue;
     }
 
-    if (delayHasHazard(*CurrI, RegDU, IM))
+    const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
+
+    if (delayHasHazard(STI, *CurrI, RegDU, IM))
       continue;
 
-    const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
     bool InMicroMipsMode = STI.inMicroMipsMode();
     const MipsInstrInfo *TII = STI.getInstrInfo();
     unsigned Opcode = (*Slot).getOpcode();
@@ -1000,7 +1001,8 @@ bool MipsDelaySlotFiller::examinePred(MachineBasicBlock &Pred,
   return true;
 }
 
-bool MipsDelaySlotFiller::delayHasHazard(const MachineInstr &Candidate,
+bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, 
+                                         const MachineInstr &Candidate,
                                          RegDefsUses &RegDU,
                                          InspectMemInstr &IM) const {
   assert(!Candidate.isKill() &&
@@ -1010,6 +1012,23 @@ bool MipsDelaySlotFiller::delayHasHazard(const MachineInstr &Candidate,
 
   HasHazard |= IM.hasHazard(Candidate);
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
+
+  if(STI.hasMips1()) {
+    const MipsInstrInfo* TII = STI.getInstrInfo();
+    const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
+
+    // Having an instruction with a load delay slot in the branch delay slot
+    // seems to not check the load delay slots for hazards.
+    // Not allowing load delay slot commands in branch delays produces always
+    // valid code but may reduce optimization slightly.
+    //
+    // TODO: Ideally we would want to check the register being used in this command 
+    // with the registers of the next command and for the jump target. If we can not
+    // locate the jump target, then we assume hazard. 
+    if(HasLoadDelaySlot) {
+      return true;
+    }
+  }
 
   return HasHazard;
 }
