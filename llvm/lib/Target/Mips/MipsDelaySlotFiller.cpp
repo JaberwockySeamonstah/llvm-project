@@ -39,6 +39,7 @@
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include <cassert>
 #include <iterator>
@@ -229,7 +230,7 @@ namespace {
     /// This function checks if it is valid to move Candidate to the delay slot
     /// and returns true if it isn't. It also updates memory and register
     /// dependence information.
-    bool delayHasHazard(const MipsSubtarget& STI, const MachineInstr &Candidate, 
+    bool delayHasHazard(const MachineBasicBlock &MBB, const MipsSubtarget& STI, const MachineInstr &Candidate, 
                         RegDefsUses &RegDU, InspectMemInstr &IM) const;
 
     /// This function searches range [Begin, End) for an instruction that can be
@@ -791,7 +792,7 @@ bool MipsDelaySlotFiller::searchRange(MachineBasicBlock &MBB, IterTy Begin,
 
     const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
 
-    if (delayHasHazard(STI, *CurrI, RegDU, IM))
+    if (delayHasHazard(MBB, STI, *CurrI, RegDU, IM))
       continue;
 
     bool InMicroMipsMode = STI.inMicroMipsMode();
@@ -1001,7 +1002,7 @@ bool MipsDelaySlotFiller::examinePred(MachineBasicBlock &Pred,
   return true;
 }
 
-bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, 
+bool MipsDelaySlotFiller::delayHasHazard(const MachineBasicBlock &MBB, const MipsSubtarget& STI, 
                                          const MachineInstr &Candidate,
                                          RegDefsUses &RegDU,
                                          InspectMemInstr &IM) const {
@@ -1016,6 +1017,21 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI,
   if(STI.hasMips1()) {
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
+
+    const auto& branch = MBB.instr_back();
+    outs() << "MBB is: " << MBB << "Candidate is: " << Candidate;
+
+    // Check if this is a conditional branch by looking for an MBB operand
+    const MachineBasicBlock *TargetMBB = nullptr;
+    for (const MachineOperand &MO : branch.operands()) {
+      if(MO.isMBB()) {
+        outs() << "\t>>>" << MO << "<<<\n";
+        TargetMBB = MO.getMBB();
+      }
+    }
+    const auto& target_instr = TargetMBB->instr_front();
+    outs() << "\tDST: " << target_instr;
+    outs() << "\tRESULT: " << TII->SafeInLoadDelaySlot(target_instr, Candidate) << "\n---\n";
 
     // Having an instruction with a load delay slot in the branch delay slot
     // seems to not check the load delay slots for hazards.
