@@ -1020,7 +1020,8 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
   HasHazard |= IM.hasHazard(Candidate);
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
 
-  if(STI.hasMips1()) {
+  // This only matters for MIPS1
+  if(!STI.hasMips2()) {
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
@@ -1031,7 +1032,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
         return false;
       }
 
-      outs() << (branch->isIndirectBranch() ? "Indirect-" : "") << "Branch is: " << branch << "Candidate is: " << Candidate;
+      outs() << (branch->isIndirectBranch() ? "Indirect-" : "") << "Branch is: " << *branch << "Candidate is: " << Candidate;
 
       // Being an indirect branch means we can not tell if we are a hazard
       // Assume the worst
