@@ -88,7 +88,7 @@ namespace {
   using Iter = MachineBasicBlock::iterator;
   using ReverseIter = MachineBasicBlock::reverse_iterator;
   using BB2BrMap = SmallDenseMap<MachineBasicBlock *, MachineInstr *, 2>;
-  using BranchTargets = std::pair<MachineInstr&, MachineInstr*>;
+  using BranchTargets = std::pair<const MachineInstr*, const MachineInstr*>;
 
   class RegDefsUses {
   public:
@@ -796,8 +796,9 @@ bool MipsDelaySlotFiller::searchRange(MachineBasicBlock &MBB, MachineInstr *Firs
       continue;
     }
 
-    const MipsSubtarget &STI = MBB.getParent()->getSubtarget<MipsSubtarget>();
-    if (delayHasHazard(STI, BranchTargets(MBB.instr_back(), FirstNextMBBInstr), *CurrI, RegDU, IM))
+    const MipsSubtarget &STI       = MBB.getParent()->getSubtarget<MipsSubtarget>();
+    const MachineInstr &last_instr = MBB.instr_back();
+    if (delayHasHazard(STI, BranchTargets(last_instr.isBranch() ? &last_instr : nullptr, FirstNextMBBInstr), *CurrI, RegDU, IM))
       continue;
 
     bool InMicroMipsMode = STI.inMicroMipsMode();
@@ -1025,11 +1026,23 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
 
     if(HasLoadDelaySlot) {
       const auto [branch, next_instr] = BranchTarget;
-      outs() << "Branch is: " << branch << "Candidate is: " << Candidate;
+      // We have no branch
+      if(!branch) {
+        return false;
+      }
+
+      outs() << (branch->isIndirectBranch() ? "Indirect-" : "") << "Branch is: " << branch << "Candidate is: " << Candidate;
+
+      // Being an indirect branch means we can not tell if we are a hazard
+      // Assume the worst
+      if(branch->isIndirectBranch()) {
+        outs() << "\tNew Hazard?: Yes\n---\n";
+        return true;
+      }
 
       // Check if this is a conditional branch by looking for an MBB operand
       const MachineBasicBlock *TargetMBB = nullptr;
-      for (const MachineOperand &MO : branch.operands()) {
+      for (const MachineOperand &MO : branch->operands()) {
         if(MO.isMBB()) {
           outs() << "\t>>>" << MO << "<<<\n";
           TargetMBB = MO.getMBB();
