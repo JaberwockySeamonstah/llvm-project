@@ -1021,7 +1021,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
 
   // This only matters for MIPS1
-  if(!STI.hasMips2()) {
+  if (STI.hasMips1()) { //(!STI.hasMips2()) {
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
@@ -1049,13 +1049,24 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
           TargetMBB = MO.getMBB();
         }
       }
+
+      if (!TargetMBB || TargetMBB->empty()) {
+        outs() << "No or empty Target MBB found\n";
+        return true;
+      }
+
       const auto& target_instr = TargetMBB->instr_front();
       outs() << "\tDST->: " << target_instr;
       outs() << "\tDST-v: "; if(next_instr) {outs() << *next_instr;} else {outs() << "<NONE>";} outs() << "\n";
-      const bool HasNewHazard = !TII->SafeInLoadDelaySlot(target_instr, Candidate) || !TII->SafeInLoadDelaySlot(*next_instr, Candidate);
+
+      bool HasNewHazard = !TII->SafeInLoadDelaySlot(target_instr, Candidate);
+      // If the branch is unconditional then we do not need to bother to check the next instruction after the branch
+      if(!branch->isUnconditionalBranch() && next_instr) {
+        HasNewHazard |= !TII->SafeInLoadDelaySlot(*next_instr, Candidate);
+      }
       outs() << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
 
-      HasHazard |= HasNewHazard;
+      return HasNewHazard;
     }
   }
 
