@@ -1026,24 +1026,25 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
     if(HasLoadDelaySlot) {
-      const auto [branch, next_instr] = BranchTarget;
+      const auto [Branch, AfterBranchInstr] = BranchTarget;
       // We have no branch
-      if(!branch) {
+      if (!Branch) {
         return false;
       }
 
-      outs() << (branch->isIndirectBranch() ? "Indirect-" : "") << "Branch is: " << *branch << "Candidate is: " << Candidate;
+      outs() << (Branch->isIndirectBranch() ? "Indirect-" : "")
+             << "Branch is: " << *Branch << "Candidate is: " << Candidate;
 
       // Being an indirect branch means we can not tell if we are a hazard
       // Assume the worst
-      if(branch->isIndirectBranch()) {
+      if (Branch->isIndirectBranch()) {
         outs() << "\tNew Hazard?: Yes\n---\n";
         return true;
       }
 
       // Check if this is a conditional branch by looking for an MBB operand
       const MachineBasicBlock *TargetMBB = nullptr;
-      for (const MachineOperand &MO : branch->operands()) {
+      for (const MachineOperand &MO : Branch->operands()) {
         if(MO.isMBB()) {
           outs() << "\t>>>" << MO << "<<<\n";
           TargetMBB = MO.getMBB();
@@ -1055,14 +1056,22 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
         return true;
       }
 
-      const auto& target_instr = TargetMBB->instr_front();
-      outs() << "\tDST->: " << target_instr;
-      outs() << "\tDST-v: "; if(next_instr) {outs() << *next_instr;} else {outs() << "<NONE>";} outs() << "\n";
+      const auto &BranchTargetInstr = TargetMBB->instr_front();
+      outs() << "\tDST->: " << BranchTargetInstr;
+      outs() << "\tDST-v: ";
+      if (AfterBranchInstr) {
+        outs() << *AfterBranchInstr;
+      } else {
+        outs() << "<NONE>";
+      }
+      outs() << "\n";
 
-      bool HasNewHazard = !TII->SafeInLoadDelaySlot(target_instr, Candidate);
-      // If the branch is unconditional then we do not need to bother to check the next instruction after the branch
-      if(!branch->isUnconditionalBranch() && next_instr) {
-        HasNewHazard |= !TII->SafeInLoadDelaySlot(*next_instr, Candidate);
+      bool HasNewHazard =
+          !TII->SafeInLoadDelaySlot(BranchTargetInstr, Candidate);
+      // If the branch is unconditional then we do not need to bother to check
+      // the next instruction after the branch
+      if (!Branch->isUnconditionalBranch() && AfterBranchInstr) {
+        HasNewHazard |= !TII->SafeInLoadDelaySlot(*AfterBranchInstr, Candidate);
       }
       outs() << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
 
