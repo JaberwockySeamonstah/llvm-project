@@ -44,7 +44,6 @@
 #include <cassert>
 #include <iterator>
 #include <memory>
-#include <optional>
 #include <utility>
 
 using namespace llvm;
@@ -1021,7 +1020,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
 
   // This only matters for MIPS1
-  if (STI.hasMips1()) { //(!STI.hasMips2()) {
+  if (!STI.hasMips2()) { //(!STI.hasMips2()) { // (STI.hasMips1()){
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
@@ -1029,16 +1028,17 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
       const auto [Branch, AfterBranchInstr] = BranchTarget;
       // We have no branch
       if (!Branch) {
-        return false;
+        errs() << "No branch?\n";
+        return true;
       }
 
-      outs() << (Branch->isIndirectBranch() ? "Indirect-" : "")
+      errs() << (Branch->isIndirectBranch() ? "Indirect-" : "")
              << "Branch is: " << *Branch << "Candidate is: " << Candidate;
 
       // Being an indirect branch means we can not tell if we are a hazard
       // Assume the worst
       if (Branch->isIndirectBranch()) {
-        outs() << "\tNew Hazard?: Yes\n---\n";
+        errs()  << "\tNew Hazard?: Yes\n---\n";
         return true;
       }
 
@@ -1046,25 +1046,25 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
       const MachineBasicBlock *TargetMBB = nullptr;
       for (const MachineOperand &MO : Branch->operands()) {
         if(MO.isMBB()) {
-          outs() << "\t>>>" << MO << "<<<\n";
+          errs()  << "\t>>>" << MO << "<<<\n";
           TargetMBB = MO.getMBB();
         }
       }
 
       if (!TargetMBB || TargetMBB->empty()) {
-        outs() << "No or empty Target MBB found\n";
+        errs()  << "No or empty Target MBB found\n";
         return true;
       }
 
       const auto &BranchTargetInstr = TargetMBB->instr_front();
-      outs() << "\tDST->: " << BranchTargetInstr;
-      outs() << "\tDST-v: ";
+      errs()  << "\tDST->: " << BranchTargetInstr;
+      errs() << "\tDST-v: ";
       if (AfterBranchInstr) {
-        outs() << *AfterBranchInstr;
+        errs() << *AfterBranchInstr;
       } else {
-        outs() << "<NONE>";
+        errs() << "<NONE>";
       }
-      outs() << "\n";
+      errs() << "\n";
 
       bool HasNewHazard =
           !TII->SafeInLoadDelaySlot(BranchTargetInstr, Candidate);
@@ -1073,7 +1073,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget& STI, const BranchT
       if (!Branch->isUnconditionalBranch() && AfterBranchInstr) {
         HasNewHazard |= !TII->SafeInLoadDelaySlot(*AfterBranchInstr, Candidate);
       }
-      outs() << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
+      errs() << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
 
       return HasNewHazard;
     }
