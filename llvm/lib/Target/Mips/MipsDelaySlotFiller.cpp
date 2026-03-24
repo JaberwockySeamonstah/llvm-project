@@ -88,57 +88,71 @@ namespace {
   using ReverseIter = MachineBasicBlock::reverse_iterator;
   using BB2BrMap = SmallDenseMap<MachineBasicBlock *, MachineInstr *, 2>;
 
-  #if 0
-    #define tmp_out outs()
-  #else
-    #define tmp_out nulls()
-  #endif
+#if 0
+#define tmp_out outs()
+#else
+#define tmp_out nulls()
+#endif
+
+  // Holds information about one branch instruction
+  // This is used by the MIPS1 target to easily find all paths of a branch to
+  // then check the first instruction for possible load delay hazards
   class BranchInformation {
   private:
-    const MachineInstr *branch_instr = nullptr;
-    const MachineInstr *branch_else_instr = nullptr;
+    // The pointer to the actual branch instruction
+    const MachineInstr *BranchInstr = nullptr;
+    // The pointer to the instruction after the branch (= the `else` case)
+    const MachineInstr *ElseBranchInstr = nullptr;
 
   public:
-    BranchInformation(MachineInstrBundleIterator<MachineInstr> current_slot,
-                      MachineInstrBundleIterator<MachineInstr> mbb_end,
-                      const MachineInstr *next_mbb_instr)
-        : branch_instr(current_slot->isBranch() ? &(*current_slot) : nullptr),
-          branch_else_instr((++current_slot) == mbb_end ? next_mbb_instr
-                                                        : &(*current_slot)) {}
+    // Creates a new `BranchInformation` from the branch candidate `CurrentSlot`
+    // together with the end (`MBBEnd`) of the current MBB and the first
+    // instruction of the next MBB `NextMBBInstr`
+    BranchInformation(MachineInstrBundleIterator<MachineInstr> CurrentSlot,
+                      MachineInstrBundleIterator<MachineInstr> MBBEnd,
+                      const MachineInstr *NextMBBInstr)
+        : BranchInstr(CurrentSlot->isBranch() ? &(*CurrentSlot) : nullptr),
+          ElseBranchInstr((++CurrentSlot) == MBBEnd ? NextMBBInstr
+                                                    : &(*CurrentSlot)) {}
 
-    constexpr bool hasBranchInstr() const { return this->branch_instr; }
+    // Checks if we have a branch
+    constexpr bool hasBranchInstr() const { return this->BranchInstr; }
 
-    constexpr bool hasBranchElseInstr() const {
-      return this->branch_else_instr;
-    }
+    // Checks if we have an else branch
+    constexpr bool hasBranchElseInstr() const { return this->ElseBranchInstr; }
 
+    // Checks if we have an indirect branch
     constexpr bool isIndirectBranch() const {
-      if (this->branch_instr) {
-        return this->branch_instr->isIndirectBranch();
+      if (this->BranchInstr) {
+        return this->BranchInstr->isIndirectBranch();
       }
       return false;
     }
 
+    // Checks if we have an unconditional branch
     constexpr bool isUnconditionalBranch() const {
-      if (this->branch_instr) {
-        return this->branch_instr->isUnconditionalBranch();
+      if (this->BranchInstr) {
+        return this->BranchInstr->isUnconditionalBranch();
       }
       return false;
     }
 
-    const MachineInstr *getBranchInstr() const { return this->branch_instr; }
+    // Accesses the branch instruction
+    const MachineInstr *getBranchInstr() const { return this->BranchInstr; }
 
+    // Accesses the instruction after the branch
     const MachineInstr *getBranchElseInstr() const {
-      return this->branch_else_instr;
+      return this->ElseBranchInstr;
     }
 
+    // Gets the target of the branch
     const MachineBasicBlock *getBranchTarget() const {
       if (this->isIndirectBranch() || !this->hasBranchInstr()) {
         // Indirect branch has no known target
         return nullptr;
       }
 
-      for (const MachineOperand &MO : this->branch_instr->operands()) {
+      for (const MachineOperand &MO : this->BranchInstr->operands()) {
         if (MO.isMBB()) {
           tmp_out << "\t>>>" << MO << "<<<\n";
           return MO.getMBB();
@@ -1089,20 +1103,22 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
 
   // This only matters for MIPS1
-  if (!STI.hasMips2()) { //(!STI.hasMips2()) { // (STI.hasMips1()){
+  if (!STI.hasMips2()) {
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
+    // We only need to act if the candidate is having a load delay slot
     if (HasLoadDelaySlot) {
-      // We have no branch
+      // We have no branch so we can not determine a hazard
+      // Assume the worst
       if (!BranchInfo.hasBranchInstr()) {
         tmp_out << "No branch?\n";
         return true;
       }
 
       tmp_out << (BranchInfo.isIndirectBranch() ? "Indirect-" : "")
-             << "Branch is: " << *BranchInfo.getBranchInstr()
-             << "Candidate is: " << Candidate;
+              << "Branch is: " << *BranchInfo.getBranchInstr()
+              << "Candidate is: " << Candidate;
 
       // Being an indirect branch means we can not tell if we are a hazard
       // Assume the worst
@@ -1146,7 +1162,8 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
         }
       }
 
-      tmp_out << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
+      tmp_out << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No")
+              << "\n---\n";
       return HasNewHazard;
     }
   }
