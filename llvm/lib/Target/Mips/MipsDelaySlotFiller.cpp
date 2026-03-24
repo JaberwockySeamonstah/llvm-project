@@ -88,6 +88,11 @@ namespace {
   using ReverseIter = MachineBasicBlock::reverse_iterator;
   using BB2BrMap = SmallDenseMap<MachineBasicBlock *, MachineInstr *, 2>;
 
+  #if 0
+    #define tmp_out outs()
+  #else
+    #define tmp_out nulls()
+  #endif
   class BranchInformation {
   private:
     const MachineInstr *branch_instr = nullptr;
@@ -135,7 +140,7 @@ namespace {
 
       for (const MachineOperand &MO : this->branch_instr->operands()) {
         if (MO.isMBB()) {
-          errs() << "\t>>>" << MO << "<<<\n";
+          tmp_out << "\t>>>" << MO << "<<<\n";
           return MO.getMBB();
         }
       }
@@ -1091,18 +1096,18 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
     if (HasLoadDelaySlot) {
       // We have no branch
       if (!BranchInfo.hasBranchInstr()) {
-        errs() << "No branch?\n";
+        tmp_out << "No branch?\n";
         return true;
       }
 
-      errs() << (BranchInfo.isIndirectBranch() ? "Indirect-" : "")
+      tmp_out << (BranchInfo.isIndirectBranch() ? "Indirect-" : "")
              << "Branch is: " << *BranchInfo.getBranchInstr()
              << "Candidate is: " << Candidate;
 
       // Being an indirect branch means we can not tell if we are a hazard
       // Assume the worst
       if (BranchInfo.isIndirectBranch()) {
-        errs() << "\tNew Hazard?: Yes\n---\n";
+        tmp_out << "\tNew Hazard?: Yes\n---\n";
         return true;
       }
 
@@ -1110,19 +1115,19 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
       // target
       const MachineBasicBlock *TargetMBB = BranchInfo.getBranchTarget();
       if (!TargetMBB || TargetMBB->empty()) {
-        errs() << "No or empty Target MBB found\n";
+        tmp_out << "No or empty Target MBB found\n";
         return true;
       }
 
       const auto &BranchTargetInstr = TargetMBB->instr_front();
-      errs() << "\tDST->: " << BranchTargetInstr;
-      errs() << "\tDST-v: ";
+      tmp_out << "\tDST->: " << BranchTargetInstr;
+      tmp_out << "\tDST-v: ";
       if (BranchInfo.hasBranchElseInstr()) {
-        errs() << *BranchInfo.getBranchElseInstr();
+        tmp_out << *BranchInfo.getBranchElseInstr();
       } else {
-        errs() << "<NONE>";
+        tmp_out << "<NONE>";
       }
-      errs() << "\n";
+      tmp_out << "\n";
 
       bool HasNewHazard =
           !TII->SafeInLoadDelaySlot(BranchTargetInstr, Candidate);
@@ -1141,7 +1146,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
         }
       }
 
-      errs() << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
+      tmp_out << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No") << "\n---\n";
       return HasNewHazard;
     }
   }
