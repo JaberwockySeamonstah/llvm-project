@@ -191,13 +191,9 @@ define i8 @f1() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(a)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13:]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2:]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
+; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13:]] SLL
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
 ; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
@@ -374,10 +370,6 @@ define i32 @f2() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(a)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
@@ -558,10 +550,6 @@ define i16 @f3() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(b)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
@@ -741,10 +729,6 @@ define i32 @f4() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(b)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
@@ -925,10 +909,6 @@ define i32 @f5() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(c)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
@@ -1129,10 +1109,6 @@ define i64 @f6() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(c)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    addiu $3, $zero, 0 # <MCInst #[[#MCINST22:]] ADDiu
@@ -1337,10 +1313,6 @@ define i64 @f7() {
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:V0>
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:AT>
 ; MIPS1-PSX-NEXT:    # <MCOperand Expr:%lo(c)>>
-; MIPS1-PSX-NEXT:    nop # <MCInst #[[#MCINST13]] SLL
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Reg:ZERO>
-; MIPS1-PSX-NEXT:    # <MCOperand Imm:0>>
 ; MIPS1-PSX-NEXT:    jr $ra # <MCInst #[[#MCINST2]] JR
 ; MIPS1-PSX-NEXT:    # <MCOperand Reg:RA>>
 ; MIPS1-PSX-NEXT:    sra $3, $2, 31 # <MCInst #[[#MCINST25:]] SRA
