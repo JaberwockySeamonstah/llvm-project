@@ -104,6 +104,15 @@ namespace {
     // The pointer to the instruction after the branch (= the `else` case)
     const MachineInstr *ElseBranchInstr = nullptr;
 
+    // Check if `Adr` is a pseudo instruction and if so, then treat it as non
+    // existing
+    static const MachineInstr *filterPseudoInstr(const MachineInstr *Adr) {
+      if (Adr && !Adr->isPseudo()) {
+        return Adr;
+      }
+      return nullptr;
+    }
+
   public:
     // Creates a new `BranchInformation` from the branch candidate `CurrentSlot`
     // together with the end (`MBBEnd`) of the current MBB and the first
@@ -111,9 +120,14 @@ namespace {
     BranchInformation(MachineInstrBundleIterator<MachineInstr> CurrentSlot,
                       MachineInstrBundleIterator<MachineInstr> MBBEnd,
                       const MachineInstr *NextMBBInstr)
-        : BranchInstr(CurrentSlot->isBranch() ? &(*CurrentSlot) : nullptr),
-          ElseBranchInstr((++CurrentSlot) == MBBEnd ? NextMBBInstr
-                                                    : &(*CurrentSlot)) {}
+        : BranchInstr(
+              CurrentSlot->isBranch()
+                  ? BranchInformation::filterPseudoInstr(&(*CurrentSlot))
+                  : nullptr),
+          ElseBranchInstr(
+              (++CurrentSlot) == MBBEnd
+                  ? BranchInformation::filterPseudoInstr(NextMBBInstr)
+                  : BranchInformation::filterPseudoInstr(&(*CurrentSlot))) {}
 
     // Checks if we have a branch
     constexpr bool hasBranchInstr() const { return this->BranchInstr; }
