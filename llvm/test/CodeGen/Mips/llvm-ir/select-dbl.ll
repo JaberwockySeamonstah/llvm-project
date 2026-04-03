@@ -241,10 +241,11 @@ define double @tst_select_i1_double_reordered(double %x, double %y,
 ;
 ; MIPS1-PSX-LABEL: tst_select_i1_double_reordered:
 ; MIPS1-PSX:       # %bb.0: # %entry
-; MIPS1-PSX-NEXT:    mov.d $f0, $f12
+; MIPS1-PSX-NEXT:    lw $1, 16($sp)
+; MIPS1-PSX-NEXT:    nop
 ; MIPS1-PSX-NEXT:    andi $1, $1, 1
 ; MIPS1-PSX-NEXT:    bnez $1, $BB1_2
-; MIPS1-PSX-NEXT:    lw $1, 16($sp)
+; MIPS1-PSX-NEXT:    mov.d $f0, $f12
 ; MIPS1-PSX-NEXT:  # %bb.1: # %entry
 ; MIPS1-PSX-NEXT:    mov.d $f0, $f14
 ; MIPS1-PSX-NEXT:  $BB1_2: # %entry
