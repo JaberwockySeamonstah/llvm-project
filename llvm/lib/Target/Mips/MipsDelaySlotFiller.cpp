@@ -1116,8 +1116,8 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
   HasHazard |= IM.hasHazard(Candidate);
   HasHazard |= RegDU.update(Candidate, 0, Candidate.getNumOperands());
 
-  // This only matters for MIPS1
-  if (!STI.hasMips2()) {
+  // This only matters for MIPS1 and only if we do not have a hazard already
+  if (!STI.hasMips2() && !HasHazard) {
     const MipsInstrInfo* TII = STI.getInstrInfo();
     const bool HasLoadDelaySlot = TII->HasLoadDelaySlot(Candidate);
 
@@ -1176,7 +1176,7 @@ bool MipsDelaySlotFiller::delayHasHazard(const MipsSubtarget &STI,
         }
       }
 
-      tmp_out << "\tNew Hazard?: " << (HasNewHazard ? "Yes" : "No")
+      tmp_out << "\tNew Hazard detected?: " << (HasNewHazard ? "Yes" : "No") << " Old Hazard detected: " << (HasHazard ? "Yes" : "No")
               << "\n---\n";
       return HasNewHazard;
     }
